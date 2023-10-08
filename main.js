@@ -4,11 +4,12 @@ import { GUI } from 'dat.gui';
 
 // Création de la scène
 var scene = new THREE.Scene();
-scene.background = new THREE.Color('lightblue');
+scene.background = new THREE.Color('black');
 
 var camera = new THREE.PerspectiveCamera(
 	75,
 	window.innerWidth / window.innerHeight);
+camera.position.z = 70;
 
 var renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -20,10 +21,6 @@ scene.add(ambientLight);
 
 let pointLight = new THREE.PointLight(0xFFFF00, 5);
 scene.add(pointLight);
-
-// Scene
-// Tree
-let tree = new THREE.Object3D();
 
 // GUI
 const gui = new GUI();
@@ -44,18 +41,10 @@ const cameraPositionFolder = gui.addFolder('Camera');
 // 3 - min value
 // 4 - max value
 // 5 - optional: step (smallest increment possible), default: 0.1
-cameraPositionFolder.add(camera.position, 'z', 0, 20);
+cameraPositionFolder.add(camera.position, 'z', 50, 90);
 
 // You can open the folder by default with: folderName.open();
 // Ex: cameraPositionFolder.open();
-
-const treeFolder = gui.addFolder('Tree');
-
-// You can also add folders inside a folder.
-const treeRotationFolder = treeFolder.addFolder('Rotation');
-treeRotationFolder.add(tree.rotation, 'x', 0, Math.PI * 2);
-treeRotationFolder.add(tree.rotation, 'y', 0, Math.PI * 2);
-treeRotationFolder.add(tree.rotation, 'z', 0, Math.PI * 2);
 
 // Create an animation loop
 const animate = () => {
@@ -64,3 +53,10 @@ const animate = () => {
 };
 
 animate();
+
+salesman.init();
+
+scene.add(salesman.anchor);
+
+let result = salesman.generate();
+console.log(result);

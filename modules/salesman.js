@@ -1,15 +1,19 @@
 import * as THREE from 'three';
 
 let __SETTINGS__ = {
-	pointsCount: 20,
+	pointsCount: 30,
 	populationMax: 100,
 	mutationFrequency: 0.15,
 	crossFrequency: 0.30,
-	weights: [0.40, 0.30, 0.17, 0.08, 0.05]
+	weights: [0.40, 0.30, 0.17, 0.08, 0.05],
+	distanceScale: 30
 };
 
 let __POINTS__ = [];
 let __STARTPOSITION__ = undefined;
+
+let _anchor = new THREE.Object3D();
+let _lights = new THREE.Object3D();
 
 /**
  * Represents a Path in the Travelling Salesman Problem.
@@ -24,28 +28,28 @@ class Path {
 	 */
 	constructor(pointIndex) {
 		this.pointIndex = pointIndex;
-		this.score = this.score();
+		this.score = this.computeScore();
 	}
 
 	length() {
-		let score = 0.0;
+		let total = 0.0;
 
 		for (let i = 0; i < this.pointIndex.length - 1; i++) {
-			score += __POINTS__[this.pointIndex[i]].distanceTo(__POINTS__[this.pointIndex[i + 1]]);
+			total += __POINTS__[this.pointIndex[i]].distanceTo(__POINTS__[this.pointIndex[i + 1]]);
 		}
 
 		// add start and end distance parts of the path, connecting with the starting position
-		score += __STARTPOSITION__.distanceTo(__POINTS__[this.pointIndex[0]]);
-		score += __STARTPOSITION__.distanceTo(__POINTS__[this.pointIndex[this.pointIndex.length - 1]]);
+		total += __STARTPOSITION__.distanceTo(__POINTS__[this.pointIndex[0]]);
+		total += __STARTPOSITION__.distanceTo(__POINTS__[this.pointIndex[this.pointIndex.length - 1]]);
 
-		return score;
+		return total;
 	}
 
 	isValid() {
-		return (new Set(this.pointIndex)).size !== this.pointIndex.length;
+		return (new Set(this.pointIndex)).size === this.pointIndex.length;
 	}
 
-	score() {
+	computeScore() {
 		if (!this.isValid()) {
 			return 999999999;
 		}
@@ -73,7 +77,7 @@ class Path {
 	 * - a positive if the other path is better
 	 */
 	isBetterThan(other) {
-		return this.score() - other.score();
+		return this.score - other.score;
 	}
 
 	/**
@@ -94,7 +98,7 @@ class Path {
 	}
 
 	/**
-	 * 
+	 * Provides an offspring from a crossover between two Paths.
 	 * @param {Path} other 
 	 * @param {number} slices number of slices
 	 * @todo slices are defaulted to 1 (and not yet used)
@@ -109,16 +113,16 @@ class Path {
 		offspring.push(...this.pointIndex.slice(0, pick));
 
 		// Fill the rest with the other parent
-		let rest = other.pointIndex.slice(pick);
+		let rest = other.pointIndex;
 		let currentParent2Index = 0;
 
-		for (let i = pick ; i < this.pointIndex.length ; i++) {
-			while (offspring.includes(rest[currentParent2Index])) {
+		for (let i = pick; i < this.pointIndex.length; i++) {
+			while (offspring.includes(rest[currentParent2Index]) && currentParent2Index < this.pointIndex.length) {
 				currentParent2Index++;
 			}
 			offspring.push(rest[currentParent2Index]);
 		}
-		
+
 
 		return new Path(offspring);
 	}
@@ -140,20 +144,16 @@ function shuffleArray(array) {
 
 /** 
  * @param {int} size 
- * @returns an array initialized with [1, 2, 3, ..., size - 1]
+ * @returns an array initialized with [0, 1, 2, 3, ..., size - 1]
  */
 function initArray(size) {
-	let array = [];
-
 	if (size < 1) {
 		throw new Error('initArray: size must be positive');
 	}
 
-	for (let i = 0; i < size; i++) {
-		array.push(i);
-	}
-
-	return array;
+	// trick explained here
+	// https://tobias-ljungstrom.medium.com/how-to-quickly-create-an-array-of-sequential-numbers-in-javascript-and-how-it-works-686663f06d5
+	return [...Array(size).keys()];
 }
 
 function randomPoint() {
@@ -161,7 +161,7 @@ function randomPoint() {
 		Math.random(),
 		Math.random(),
 		Math.random()
-	);
+	).multiplyScalar(__SETTINGS__.distanceScale);
 }
 
 /**
@@ -180,7 +180,7 @@ function roll(weights, excludeIndex = -1) {
 			let pointsInWeightCut = Math.ceil(__SETTINGS__.populationMax / weights.length);
 			let j = i * pointsInWeightCut
 				+ Math.floor(((n - sum) * 100 / weights[i]) * pointsInWeightCut);
-			
+
 			if (j != excludeIndex) {
 				return j;
 			} else {
@@ -198,36 +198,56 @@ function roll(weights, excludeIndex = -1) {
 }
 
 const api = {
-	init: (pointsCount, populationMax, mutationFrequency, crossFrequency) => {
+	settings: (pointsCount, populationMax, mutationFrequency, crossFrequency) => {
 		__SETTINGS__.pointsCount = pointsCount;
 		__SETTINGS__.populationMax = populationMax;
 		__SETTINGS__.mutationFrequency = mutationFrequency;
 		__SETTINGS__.crossFrequency = crossFrequency;
 	},
-	/**
-	 * Returns a (hopefully) good solution to the Travelling Salesman problem
-	 * @param {function} render Rendering callback to show mid results
-	 */
-	generate: (render, generations = 60, points = []) => {
+
+	init: () => {
 		if (__SETTINGS__.pointsCount < 1) {
 			throw new RangeError('Path.generate: Cannot generate 0 points or less. Number given: ' + __SETTINGS__.pointsCount);
 		}
 
 		// Points
-		if (points.length == 0) {
-			points = []; // Avoids duplicates in later generations
-			for (let i in __SETTINGS__.pointsCount) {
-				points[i] = randomPoint();
-			}
-
-			__STARTPOSITION__ = randomPoint();
+		__POINTS__ = []; // Avoids duplicates in later generations
+		for (let i = 0 ; i < __SETTINGS__.pointsCount ; i++) {
+			__POINTS__[i] = randomPoint();
 		}
 
+		__STARTPOSITION__ = randomPoint();
+
+		const simpleSphere = new THREE.SphereGeometry(0.5, 8, 8);
+
+		const createCity = (position, _color = 0xffffff) => {
+			let pointLight = new THREE.PointLight(0xFFFFFF, 100);
+			pointLight.add(
+				new THREE.Mesh(
+					simpleSphere,
+					new THREE.MeshBasicMaterial({ color: _color })
+				));
+			pointLight.position.copy(position);
+			_lights.add(pointLight);
+		};
+
+		for (let i = 0; i < __POINTS__.length; i++) {
+			createCity(__POINTS__[i]);
+		}
+		createCity(__STARTPOSITION__, 0xff0000);
+	},
+
+	anchor: _anchor,
+
+	/**
+	 * Returns a (hopefully) good solution to the Travelling Salesman problem
+	 */
+	generate: (generations = 100) => {
 		// Population init
 		let population = [];
 		let array = initArray(__SETTINGS__.pointsCount);
 
-		for (let i in __SETTINGS__.populationMax) {
+		for (let i = 0; i < __SETTINGS__.populationMax; i++) {
 			population[i] = new Path(shuffleArray(array)); // generate path
 		}
 
@@ -238,11 +258,13 @@ const api = {
 			// Trim excess population
 			population = population.slice(0, __SETTINGS__.populationMax);
 
-			// Render best
-			render(); // TODO
+			// Render best path
+			console.log('Rendering...');
+			api.render(population[0].pointIndex); // TODO
+			console.log('Rendering done');
 
 			// Parent selection
-			const numberCrossovers = Math.random() * __SETTINGS__.crossFrequency * population.length;
+			const numberCrossovers = __SETTINGS__.crossFrequency * population.length;
 			for (let j = 0; j < numberCrossovers; j++) {
 				// Rolls are always between parents since the starting population size is a constant here.
 				let parentA = roll(__SETTINGS__.weights);
@@ -252,18 +274,60 @@ const api = {
 				population.push(offspring);
 			}
 
+			console.log('Parent selection & crossover done');
+
 			// Mutation
-			const numberMutations = Math.random() * __SETTINGS__.mutationFrequency * population.length;
+			const numberMutations = __SETTINGS__.mutationFrequency * population.length;
 			const populationSizeBeforeMutations = population.length;
 			for (let j = 0; j < numberMutations; j++) {
 				let mutatedPath = population[Math.floor(Math.random() * populationSizeBeforeMutations)].mutate();
 				population.push(mutatedPath);
 			}
+
+			console.log('Mutation done');
 		}
+
+		return population[0];
 	},
-	test: {
-		initArray,
-		shuffleArray
+
+	/**
+	 * Creates the objects 
+	 * @param {number[]} orderedIndex 
+	 */
+	render: function (orderedIndex) {
+		_anchor.children = [];
+
+		_anchor.add(_lights);
+
+		// for (let i = 0; i < orderedIndex.length - 1; i++) {
+		// 	let pointLight = new THREE.PointLight(0xFFFFFF, 3);
+
+		// 	let distance = __POINTS__[orderedIndex[i]].distanceTo(__POINTS__[orderedIndex[i + 1]]);
+		// 	let geometry = new THREE.CylinderGeometry(0.2, 0.2, distance, 20, 32);
+		// 	let material = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
+		// 	let mesh = new THREE.Mesh(geometry, material);
+		// 	pointLight.add(mesh);
+
+		// 	let midPoint = new THREE.Vector3(0, 0, 0)
+		// 		.addVectors(__POINTS__[orderedIndex[i]], __POINTS__[orderedIndex[i + 1]])
+		// 		.divideScalar(2);
+		// 	pointLight.position.copy(midPoint);
+		// 	pointLight.lookAt(__POINTS__[orderedIndex[i+1]]);
+		// 	_anchor.add(pointLight);
+		// }
+
+		const points = [__STARTPOSITION__];
+
+		for (let i = 0 ; i < orderedIndex.length ; i++) {
+			points.push(__POINTS__[orderedIndex[i]]);
+		}
+
+		points.push(__STARTPOSITION__);
+
+		const geometry = new THREE.BufferGeometry().setFromPoints( points );
+		const material = new THREE.LineDashedMaterial( { color: 0xffffff } );
+		const line = new THREE.Line( geometry, material );
+		_anchor.add(line);
 	}
 };
 

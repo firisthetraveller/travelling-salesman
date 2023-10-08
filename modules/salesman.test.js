@@ -11,3 +11,5 @@
 // });
 
 // Remains of some Jest testing code
+// It doesn't support ES6 and since it was a hassle to modify
+// scripts to conform to Jest's CommonJS, I just removed Jest. 
