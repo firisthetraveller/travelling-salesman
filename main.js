@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import salesman from './modules/salesman';
 import { GUI } from 'dat.gui';
 
 // Création de la scène
