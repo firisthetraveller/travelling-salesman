@@ -56,9 +56,9 @@ class Path {
 	 * A function directly usable by `Array.prototype.sort()`.
 	 * @param {Path} other 
 	 * @returns an number being:
-	 * - a negative if this path is better
+	 * - a negative if this path is shorter
 	 * - 0 if they are equal in score
-	 * - a positive if the other path is better
+	 * - a positive if the other path is shorter
 	 */
 	isShorterThan(other) {
 		return this.length() - other.length();
