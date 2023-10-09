@@ -242,6 +242,9 @@ const api = {
 
 	/**
 	 * Returns a (hopefully) good solution to the Travelling Salesman problem
+	 * using genetic algorithms.
+	 * @todo Currently a blocking call function
+	 * @return {Path}
 	 */
 	generate: async (generations = 50) => {
 		// Population init
