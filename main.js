@@ -26,7 +26,7 @@ scene.add(pointLight);
 const gui = new GUI();
 
 // Add a folder: it is a dropdown button
-const cameraPositionFolder = gui.addFolder('Camera');
+const cameraPositionFolder = gui.addFolder('Camera position');
 
 // It adds inside the folder a modifiable field
 // Here it is the z coordinate of the camera.
@@ -43,6 +43,19 @@ const cameraPositionFolder = gui.addFolder('Camera');
 // 5 - optional: step (smallest increment possible), default: 0.1
 cameraPositionFolder.add(camera.position, 'z', 50, 90);
 
+const objectRotationFolder = gui.addFolder('Object rotation');
+objectRotationFolder.add(salesman.anchor.rotation, 'x', 0, 2 * Math.PI);
+objectRotationFolder.add(salesman.anchor.rotation, 'y', 0, 2 * Math.PI);
+objectRotationFolder.add(salesman.anchor.rotation, 'z', 0, 2 * Math.PI);
+
+const settingsFolder = gui.addFolder('Settings');
+settingsFolder.add(salesman.settings, 'pointsCount', 10, 50, 1);
+settingsFolder.add(salesman.settings, 'populationMax', 50, 500, 1);
+settingsFolder.add(salesman.settings, 'mutationFrequency', 0.01, 1.00);
+settingsFolder.add(salesman.settings, 'crossFrequency', 0.01, 1.00);
+settingsFolder.add(salesman.settings, 'generations', 0.01, 1.00);
+
+// gui.add(salesman.settings, 'start');
 // You can open the folder by default with: folderName.open();
 // Ex: cameraPositionFolder.open();
 

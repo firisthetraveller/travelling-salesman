@@ -2,9 +2,10 @@ import * as THREE from 'three';
 
 let __SETTINGS__ = {
 	pointsCount: 30,
-	populationMax: 100,
+	populationMax: 500,
 	mutationFrequency: 0.15,
 	crossFrequency: 0.30,
+	generations: 60,
 	weights: [0.40, 0.30, 0.17, 0.08, 0.05],
 	distanceScale: 30
 };
@@ -198,11 +199,11 @@ function roll(weights, excludeIndex = -1) {
 }
 
 const api = {
-	settings: (pointsCount, populationMax, mutationFrequency, crossFrequency) => {
-		__SETTINGS__.pointsCount = pointsCount;
-		__SETTINGS__.populationMax = populationMax;
-		__SETTINGS__.mutationFrequency = mutationFrequency;
-		__SETTINGS__.crossFrequency = crossFrequency;
+	settings: __SETTINGS__,
+
+	start: function () {
+		this.init();
+		this.generate();
 	},
 
 	init: () => {
@@ -212,7 +213,7 @@ const api = {
 
 		// Points
 		__POINTS__ = []; // Avoids duplicates in later generations
-		for (let i = 0 ; i < __SETTINGS__.pointsCount ; i++) {
+		for (let i = 0; i < __SETTINGS__.pointsCount; i++) {
 			__POINTS__[i] = randomPoint();
 		}
 
@@ -242,7 +243,7 @@ const api = {
 	/**
 	 * Returns a (hopefully) good solution to the Travelling Salesman problem
 	 */
-	generate: (generations = 100) => {
+	generate: async (generations = 50) => {
 		// Population init
 		let population = [];
 		let array = initArray(__SETTINGS__.pointsCount);
@@ -251,9 +252,12 @@ const api = {
 			population[i] = new Path(shuffleArray(array)); // generate path
 		}
 
-		for (let i = 0; i < generations; i++) {
+		const step = async (generations) => {
 			// Ascending order, with paths with lower (better) scores first.
 			population.sort((a, b) => a.isBetterThan(b));
+
+			if (generations == 0)
+				return population[0];
 
 			// Trim excess population
 			population = population.slice(0, __SETTINGS__.populationMax);
@@ -270,8 +274,8 @@ const api = {
 				let parentA = roll(__SETTINGS__.weights);
 				let parentB = roll(__SETTINGS__.weights, parentA);
 
-				let offspring = population[parentA].breed(population[parentB]);
-				population.push(offspring);
+				population.push(population[parentA].breed(population[parentB]));
+				population.push(population[parentB].breed(population[parentA]));
 			}
 
 			console.log('Parent selection & crossover done');
@@ -285,7 +289,11 @@ const api = {
 			}
 
 			console.log('Mutation done');
-		}
+
+			setTimeout(() => step(generations - 1), 500);
+		};
+
+		await step(generations);
 
 		return population[0];
 	},
@@ -318,15 +326,15 @@ const api = {
 
 		const points = [__STARTPOSITION__];
 
-		for (let i = 0 ; i < orderedIndex.length ; i++) {
+		for (let i = 0; i < orderedIndex.length; i++) {
 			points.push(__POINTS__[orderedIndex[i]]);
 		}
 
 		points.push(__STARTPOSITION__);
 
-		const geometry = new THREE.BufferGeometry().setFromPoints( points );
-		const material = new THREE.LineDashedMaterial( { color: 0xffffff } );
-		const line = new THREE.Line( geometry, material );
+		const geometry = new THREE.BufferGeometry().setFromPoints(points);
+		const material = new THREE.LineDashedMaterial({ color: 0xffffff });
+		const line = new THREE.Line(geometry, material);
 		_anchor.add(line);
 	}
 };
