@@ -12,6 +12,8 @@ let __SETTINGS__ = {
 	generations: 60,
 	frameDelay: 500,
 	weights: [0.40, 0.30, 0.17, 0.08, 0.05],
+	lightColor: 0xffffff,
+	pointColor: 0xffffff,
 	distanceScale: 60
 };
 
@@ -237,7 +239,7 @@ const api = {
 		const simpleSphere = new THREE.SphereGeometry(0.5, 8, 8);
 
 		const createCity = (position, _color = 0xffffff) => {
-			let pointLight = new THREE.PointLight(0xFFFFFF, 100);
+			let pointLight = new THREE.PointLight(__SETTINGS__.lightColor, 100);
 			pointLight.add(
 				new THREE.Mesh(
 					simpleSphere,
@@ -248,7 +250,7 @@ const api = {
 		};
 
 		for (let i = 0; i < __POINTS__.length; i++) {
-			createCity(__POINTS__[i]);
+			createCity(__POINTS__[i], __SETTINGS__.pointColor);
 		}
 		createCity(__STARTPOSITION__, 0xff0000);
 	},

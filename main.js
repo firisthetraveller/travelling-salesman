@@ -54,6 +54,9 @@ settingsFolder.add(salesman.settings, 'populationMax', 50, 500, 1);
 settingsFolder.add(salesman.settings, 'mutationFrequency', 0.01, 1.00);
 settingsFolder.add(salesman.settings, 'crossFrequency', 0.01, 1.00);
 settingsFolder.add(salesman.settings, 'generations', 50, 150, 1);
+settingsFolder.add(salesman.settings, 'frameDelay', 100, 2000, 10);
+settingsFolder.addColor(salesman.settings, 'lightColor');
+settingsFolder.addColor(salesman.settings, 'pointColor');
 
 gui.add(salesman, 'start');
 gui.add(salesman, 'stop');
