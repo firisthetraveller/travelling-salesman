@@ -10,8 +10,9 @@ let __SETTINGS__ = {
 	mutationFrequency: 0.15,
 	crossFrequency: 0.30,
 	generations: 60,
+	frameDelay: 500,
 	weights: [0.40, 0.30, 0.17, 0.08, 0.05],
-	distanceScale: 30
+	distanceScale: 60
 };
 
 let __POINTS__ = [];
@@ -163,9 +164,9 @@ function initArray(size) {
 
 function randomPoint() {
 	return new THREE.Vector3(
-		Math.random(),
-		Math.random(),
-		Math.random()
+		Math.random() - 0.5,
+		Math.random() - 0.5,
+		Math.random() - 0.5
 	).multiplyScalar(__SETTINGS__.distanceScale);
 }
 
@@ -315,7 +316,7 @@ const api = {
 				population.push(mutatedPath);
 			}
 
-			setTimeout(() => step(generations - 1), 500);
+			setTimeout(() => step(generations - 1), __SETTINGS__.frameDelay);
 		};
 
 		await step(generations);
