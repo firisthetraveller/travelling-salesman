@@ -1,4 +1,4 @@
-# ThreeTemplate
+# Travelling Salesman
 
 With this template, you can easily create a project using Three.js.
 We use here the bundler Vite, and ESLint as the linter.
@@ -26,4 +26,25 @@ npx vite
 After using this command, you can preview your website using the link given in the terminal.
 Other commands are available while the server is running.
 
+## Module
+
+This program has been developed with an ease of use in mind.
+
+Import it with:
+```js
+import * as THREE from 'three';
+```
+
+You have several tools at your disposal:
+- `salesman.anchor` : the 3D empty object where all cities and lines will connect after and while generating.
+- `salesman.init()`: initializes the travelling salesman environment.
+- `salesman.generate()`: starts the solution generation.
+- `salesman.start()`: does the initialization then the generation in one call.
+- `salesman.stop()`: 
+- `salesman.settings` : settings as an object, to use with `dat.gui`.
+    - `pointCount`
+    - `populationMax`
+    - `generations`
+    - `mutationFrequency`
+    - `crossFrequency`
 

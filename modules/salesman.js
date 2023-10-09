@@ -1,3 +1,7 @@
+/**
+ * @author Guy Luong
+ */
+
 import * as THREE from 'three';
 
 let __SETTINGS__ = {
@@ -206,7 +210,16 @@ const api = {
 		this.generate();
 	},
 
-	init: () => {
+	stop: function() {
+		this.stopFlag = true;
+	},
+
+	/**
+	 * Initializes the TSP genetic algorithm.
+	 */
+	init: function () {
+		this.stopFlag = false;
+
 		if (__SETTINGS__.pointsCount < 1) {
 			throw new RangeError('Path.generate: Cannot generate 0 points or less. Number given: ' + __SETTINGS__.pointsCount);
 		}
@@ -218,6 +231,7 @@ const api = {
 		}
 
 		__STARTPOSITION__ = randomPoint();
+		_lights.children = [];
 
 		const simpleSphere = new THREE.SphereGeometry(0.5, 8, 8);
 
@@ -246,7 +260,11 @@ const api = {
 	 * @todo Currently a blocking call function
 	 * @return {Path}
 	 */
-	generate: async (generations = 50) => {
+	generate: async function (generations = 50) {
+		if (this.stopFlag) {
+			this.stopFlag = false;
+		}
+
 		// Population init
 		let population = [];
 		let array = initArray(__SETTINGS__.pointsCount);
@@ -255,7 +273,17 @@ const api = {
 			population[i] = new Path(shuffleArray(array)); // generate path
 		}
 
+		/**
+		 * 
+		 * @param {number} generations number of generations to do
+		 * @returns {Path}
+		 */
 		const step = async (generations) => {
+			if (this.stopFlag) {
+				console.log('Stopping...');
+				return;
+			}
+
 			// Ascending order, with paths with lower (better) scores first.
 			population.sort((a, b) => a.isBetterThan(b));
 
@@ -266,9 +294,7 @@ const api = {
 			population = population.slice(0, __SETTINGS__.populationMax);
 
 			// Render best path
-			console.log('Rendering...');
 			api.render(population[0].pointIndex); // TODO
-			console.log('Rendering done');
 
 			// Parent selection
 			const numberCrossovers = __SETTINGS__.crossFrequency * population.length;
@@ -281,8 +307,6 @@ const api = {
 				population.push(population[parentB].breed(population[parentA]));
 			}
 
-			console.log('Parent selection & crossover done');
-
 			// Mutation
 			const numberMutations = __SETTINGS__.mutationFrequency * population.length;
 			const populationSizeBeforeMutations = population.length;
@@ -290,8 +314,6 @@ const api = {
 				let mutatedPath = population[Math.floor(Math.random() * populationSizeBeforeMutations)].mutate();
 				population.push(mutatedPath);
 			}
-
-			console.log('Mutation done');
 
 			setTimeout(() => step(generations - 1), 500);
 		};

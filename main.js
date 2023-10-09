@@ -55,7 +55,8 @@ settingsFolder.add(salesman.settings, 'mutationFrequency', 0.01, 1.00);
 settingsFolder.add(salesman.settings, 'crossFrequency', 0.01, 1.00);
 settingsFolder.add(salesman.settings, 'generations', 0.01, 1.00);
 
-// gui.add(salesman.settings, 'start');
+gui.add(salesman, 'start');
+gui.add(salesman, 'stop');
 // You can open the folder by default with: folderName.open();
 // Ex: cameraPositionFolder.open();
 
