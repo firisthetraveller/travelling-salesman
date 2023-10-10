@@ -17,6 +17,25 @@ let __SETTINGS__ = {
 	distanceScale: 60
 };
 
+class TSPEnvironment {
+	/**
+	 * Bundle class for a complete environment for
+	 * the Travelling Salesman Problem.
+	 * @param {THREE.Vector3[]} points 
+	 */
+	constructor() {
+		this.start = randomPoint();
+		this.init();
+	}
+
+	init() {
+		this.points = []; // Avoids duplicates in later generations
+		for (let i = 0; i < __SETTINGS__.pointsCount; i++) {
+			this.points[i] = randomPoint();
+		}
+	}
+}
+
 /**
  * Represents a Path in the Travelling Salesman Problem.
  * 
@@ -27,13 +46,11 @@ class Path {
 	/**
 	 *
 	 * @param {number[]} pointIndex ordered point index
-	 * @param {THREE.Vector3} start
-	 * @param {THREE.Vector3[]} points
+	 * @param {TSPEnvironment} env
 	 */
-	constructor(pointIndex, start, points) {
+	constructor(pointIndex, env) {
 		this.pointIndex = pointIndex;
-		this.start = start;
-		this.points = points;
+		this.env = env;
 		this.score = this.computeScore();
 	}
 
@@ -44,12 +61,12 @@ class Path {
 		let total = 0.0;
 
 		for (let i = 0; i < this.pointIndex.length - 1; i++) {
-			total += this.points[this.pointIndex[i]].distanceTo(this.points[this.pointIndex[i + 1]]);
+			total += this.env.points[this.pointIndex[i]].distanceTo(this.env.points[this.pointIndex[i + 1]]);
 		}
 
 		// add start and end distance parts of the path, connecting with the starting position
-		total += this.start.distanceTo(this.points[this.pointIndex[0]]);
-		total += this.start.distanceTo(this.points[this.pointIndex[this.pointIndex.length - 1]]);
+		total += this.env.start.distanceTo(this.env.points[this.pointIndex[0]]);
+		total += this.env.start.distanceTo(this.env.points[this.pointIndex[this.pointIndex.length - 1]]);
 
 		return total;
 	}
@@ -103,7 +120,7 @@ class Path {
 			[newPath[pickA], newPath[pickB]] = [newPath[pickB], newPath[pickA]];
 		}
 
-		return new Path(newPath, this.start, this.points);
+		return new Path(newPath, this.env);
 	}
 
 	/**
@@ -133,7 +150,7 @@ class Path {
 		}
 
 
-		return new Path(offspring, this.start, this.points);
+		return new Path(offspring, this.env);
 	}
 }
 
@@ -209,7 +226,7 @@ function roll(weights, excludeIndex = -1) {
 class TSP {
 	constructor() {
 		this.settings = __SETTINGS__;
-		this.points = [];
+		this.environment = new TSPEnvironment();
 		this.startPosition = randomPoint();
 
 		this.anchor = new THREE.Object3D();
@@ -221,16 +238,10 @@ class TSP {
 			throw new RangeError('Path.generate: Cannot generate 0 points or less. Number given: ' + __SETTINGS__.pointsCount);
 		}
 
-		this.init();
+		this.setup();
 	}
 
-	init() {
-		// Points
-		this.points = []; // Avoids duplicates in later generations
-		for (let i = 0; i < __SETTINGS__.pointsCount; i++) {
-			this.points[i] = randomPoint();
-		}
-
+	setup() {
 		this.lights.children = [];
 
 		const simpleSphere = new THREE.SphereGeometry(0.5, 8, 8);
@@ -246,14 +257,15 @@ class TSP {
 			this.lights.add(pointLight);
 		};
 
-		for (let i = 0; i < this.points.length; i++) {
-			createCity(this.points[i], __SETTINGS__.pointColor);
+		for (let i = 0; i < this.environment.points.length; i++) {
+			createCity(this.environment.points[i], __SETTINGS__.pointColor);
 		}
-		createCity(this.startPosition, 0xff0000);
+		createCity(this.environment.start, 0xff0000);
 	}
 
 	reset() {
-		this.init();
+		this.environment.init();
+		this.setup();
 		this.generate();
 	}
 
@@ -277,7 +289,7 @@ class TSP {
 		let array = initArray(__SETTINGS__.pointsCount);
 
 		for (let i = 0; i < __SETTINGS__.populationMax; i++) {
-			population[i] = new Path(shuffleArray(array), this.startPosition, this.points); // generate path
+			population[i] = new Path(shuffleArray(array), this.environment); // generate path
 		}
 
 		/**
@@ -339,13 +351,13 @@ class TSP {
 
 		this.anchor.add(this.lights);
 
-		const points = [this.startPosition];
+		const points = [this.environment.start];
 
 		for (let i = 0; i < orderedIndex.length; i++) {
-			points.push(this.points[orderedIndex[i]]);
+			points.push(this.environment.points[orderedIndex[i]]);
 		}
 
-		points.push(this.startPosition);
+		points.push(this.environment.start);
 
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
 		const material = new THREE.LineDashedMaterial({ color: 0xffffff });
