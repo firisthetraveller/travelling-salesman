@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import salesman from './modules/salesman';
+import TSP from './modules/salesman';
 import { GUI } from 'dat.gui';
 
 // Création de la scène
@@ -21,6 +21,9 @@ scene.add(ambientLight);
 
 let pointLight = new THREE.PointLight(0xFFFF00, 5);
 scene.add(pointLight);
+
+// Scene
+let salesman = new TSP();
 
 // GUI
 const gui = new GUI();
@@ -58,8 +61,9 @@ settingsFolder.add(salesman.settings, 'frameDelay', 100, 2000, 10);
 settingsFolder.addColor(salesman.settings, 'lightColor');
 settingsFolder.addColor(salesman.settings, 'pointColor');
 
-gui.add(salesman, 'start');
-gui.add(salesman, 'stop');
+gui.add(salesman, 'generate').name('Generate');
+gui.add(salesman, 'reset').name('Reset');
+gui.add(salesman, 'stop').name('Stop');
 // You can open the folder by default with: folderName.open();
 // Ex: cameraPositionFolder.open();
 
@@ -70,8 +74,6 @@ const animate = () => {
 };
 
 animate();
-
-salesman.init();
 
 scene.add(salesman.anchor);
 
